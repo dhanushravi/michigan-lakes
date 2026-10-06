@@ -2,7 +2,7 @@
 
 A free, ad-free, open-source guide to Michigan lakes and the nature spots around them. It helps people find where to go for sunsets, sunrises, quiet water and public access. The site is static: a Python pipeline builds files, the browser does the rest. Nothing runs on a server per visit.
 
-Pilot region: **[FILL IN BEFORE STARTING]** (pick somewhere the owner can visit, so results can be checked on the ground).
+Pilot region: Oakland County, Michigan
 
 ## Scope
 
