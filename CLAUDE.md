@@ -25,8 +25,9 @@ Pilot region: Oakland County, Michigan
 | Source | Use | Release | Status |
 | --- | --- | --- | --- |
 | USGS 3DHP | Lake polygons (replaces retired NHD) | v1 | Verified to exist; confirm current download format |
-| DNR Institute for Fisheries Research (IFR) lake data | Area, depth, polygons for lakes 10+ acres | v1 | Verified; depth known for only ~2,176 lakes, so treat depth as optional |
-| DNR Parks and Recreation boating access sites | Access points and launches | v1 | Verified to exist (updated Jan 2026). **Terms pending**: mark `pending-confirmation` |
+| IFR MI Lake Deep Points (DNR Institute for Fisheries Research) | Max depth, as points (one per lake, ~2,176 lakes) | v1 | Verified; treat depth as optional. Not polygons: join by point-in-polygon |
+| DNR Reference Hydro Poly | DNR lake polygons with Acres (digitized from 1978 USGS quads) | v1 | Verified; used to split 3DHP polygons that merge separate lakes |
+| DNR boating access sites (Waterways Program inventory) | Access points and launches | v1 | Verified (updated Jan 2026). **Not a complete list of public access**: DNR-run sites plus local sites funded by Waterways grants only. **Terms pending**: mark `pending-confirmation` |
 | Protomaps basemap (OSM-derived) | Map background as one PMTiles file | v1 | Verified; self-host glyph and sprite assets |
 | DNR trails | Trails | v2 | Verified; includes motorized trails (filter out); results capped per query |
 | OpenStreetMap features | Benches, viewpoints, toilets, beaches | v4 | Coverage not measured |
@@ -34,7 +35,9 @@ Pilot region: Oakland County, Michigan
 | Google Maps photos | none | not used | API terms bar caching and storing; link out only |
 
 Notes:
-- The exact layer URLs are not recorded here. Find them in the State of Michigan Open Data Portal (search the layer names above) and record them in `pipeline/sources.yml`.
+- Layer URLs, licenses and statuses are recorded in `pipeline/sources.yml`.
+- The IFR "lake data" is two separate layers (Lake Deep Points and Reference Hydro Poly); there is no single IFR layer with area, depth and polygons.
+- Because the access layer is the Waterways Program inventory, a lake with no access point shows "none mapped", never "no public access".
 - DNR ArcGIS layers cap results per query. Page through results using the layer's `maxRecordCount` (check each layer's metadata).
 - The DNR access layer's attribute fields have **not** been checked. Inspect the field list on first fetch before designing facility chips.
 - While a source is `pending-confirmation`: use it freely for local development, but the public dataset export must skip it.
@@ -48,7 +51,9 @@ pipeline/
 site/                # static front end: lake page, card, simple map
 data/
   overrides/         # hand fixes (committed)
+  crosswalk/         # our IDs <-> source IDs (committed; keeps IDs stable)
   raw/               # downloads (gitignored; never commit)
+  build/             # step outputs and review renders (gitignored)
 docs/
 ```
 
@@ -59,6 +64,24 @@ Stack: Python (GeoPandas, Shapely, DuckDB), Node for the site, Tippecanoe and PM
 fetch (paged, dated raw files) -> change check (stop early if unchanged) -> clean (one CRS, tidy names) -> match (join access points to lakes by spatial join within a buffer; assign own IDs; apply overrides) -> enrich (outline SVG, sunset and sunrise view, drive times) -> quality gates -> publish.
 
 Quality gates: row counts within a set swing, geometries valid and inside Michigan, match rate above a threshold, no place loses its lake.
+
+### Matching rules
+
+- Region membership is by the region polygon only. The access layer's `county` field and the county number in `legacyid` are logged when they disagree, never used to include or exclude.
+- An access point matches the nearest 3DHP `Lake` polygon within 25 m. Never match by name.
+- Lakes get a `lake_id` if they are 10+ acres or have a matched access point. IDs live in `data/crosswalk/crosswalk.csv` (committed), mapped to 3DHP `id3dhp`, DNR `legacyid`/`globalid`, IFR `NewKey` and, for split lakes, DNR hydro `GlobalID`.
+- Hand fixes are in `data/overrides/match.yml`, keyed on our IDs, with `check` source IDs that fail the run if they drift. Pilot test lakes are in `pipeline/pilot_lakes.yml`.
+
+## Pilot findings: Oakland County (fetched 2026-10-06)
+
+- DNR access: 39 sites inside the county (38 on lakes, 1 on the Huron River). All 38 lake sites are within 25 m of a 3DHP polygon (max 24.3 m); widening to 200 m adds nothing.
+- 3DHP: 2,075 `Lake` polygons touch the county; 421 are 10+ acres; only 347 have a name.
+- **35 lakes have at least one access point; 32 of the 421 lakes of 10+ acres do** (Shoe, Heart and Chamberlain are under 10 acres).
+- Large lakes with no DNR site (the layer omits Metroparks and county parks): Kent (1,040 ac), Walled (653), Otter, Stony Creek, Lake Angelus, Pine, Upper Straits, Elizabeth. Walled Lake is the "none mapped" test lake.
+- Davison Lake (`A-44-004`) is coded county 63 but sits 6 m outside the Oakland polygon and its `legacyid` says county 44 (Lapeer). Excluded by the clip and logged.
+- Name conflicts (resolved by override; display name follows 3DHP): DNR Heron Lake = 3DHP Wildwood Lake; DNR Paint Lake = 3DHP Tan Lake; DNR Big Seven Lake = 3DHP Seven Lakes.
+- 3DHP merges some separate lakes into one polygon. Maceday and Lotus are split using DNR Hydro Poly. Tan Lake is a chain of six DNR basins and is not split yet. 16 lakes contain more than one IFR deep point; each is a candidate merged polygon to review.
+- IFR deep point 63-854 (Lotus Lake) duplicates 63-856 (Maceday Lake): same coordinates, same 117 ft. Excluded, so Lotus depth is not recorded.
 
 ### Sunset and sunrise view
 
