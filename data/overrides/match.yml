@@ -1,0 +1,55 @@
+# Hand fixes for the match step. Applied after spatial matching (pipeline/steps/match.py).
+#
+# Keyed on our IDs (lake_id / spot_id from data/crosswalk/crosswalk.csv). The `check` block holds the
+# source IDs these fixes were written against; if a check no longer holds, the run fails so a person
+# can review the fix instead of having it silently apply to the wrong record.
+
+# Pin an access point to a lake. Used where the DNR access layer's waterbody name differs from the
+# lake polygon's name, so the conflict is recorded as reviewed rather than flagged on every run.
+spot_lake:
+  - spot_id: S-000025
+    lake_id: L-000290
+    check: {legacyid: A-63-028, id3dhp: L9YCR}
+    reason: >-
+      DNR access calls it Heron Lake (so does the IFR deep point 63-1692). 3DHP and DNR Reference Hydro
+      Poly name the polygon Wildwood Lake. The site is inside the 3DHP polygon (0 m). Display name
+      follows 3DHP until a satellite and site check settles it.
+
+  - spot_id: S-000012
+    lake_id: L-000130
+    check: {legacyid: A-63-013, id3dhp: JISND}
+    reason: >-
+      DNR access calls it Paint Lake; 3DHP names the polygon Tan Lake. No polygon layer has a Paint
+      Lake. The 3DHP polygon is a chain of six DNR basins (Squaw x2, Tan, Spring, Long, Cedar); the site
+      is 14 m from DNR's Squaw Lake basin. Not split yet.
+
+  - spot_id: S-000030
+    lake_id: L-000417
+    check: {legacyid: A-63-035, id3dhp: MQOKQ}
+    reason: >-
+      DNR access and IFR call it Big Seven Lake; 3DHP and DNR Reference Hydro Poly call it Seven Lakes.
+      The site is inside the 3DHP polygon (0 m).
+
+# Split a 3DHP polygon that merges separate lakes, using DNR Reference Hydro Poly basins as the guide.
+# Areas not covered by any basin go to the part they share the most edge with, so the parts add up to
+# the 3DHP polygon exactly. Access points on the merged polygon move to the nearest part.
+split_lake:
+  - lake_id: L-000016
+    check: {id3dhp: IRZAG}
+    reason: >-
+      3DHP merges Maceday Lake and Lotus Lake into one 415-acre polygon. DNR maps them separately
+      (210 and 183 acres) and IFR has a deep point in each (63-856 Maceday, 63-854 Lotus).
+    parts:
+      - name: Maceday Lake
+        keep_lake_id: true
+        dnr_hydro_globalid: 15e1fac6-538f-4b5b-985a-9ab966e6016e
+      - name: Lotus Lake
+        dnr_hydro_globalid: 5a4c4884-50b5-4c87-9a04-2d736e0340ad
+
+# IFR deep points to ignore. Keyed on IFR NewKey (IFR points have no ID of ours).
+exclude_ifr_deep_point:
+  - NewKey: 63-854
+    reason: >-
+      Labelled Lotus Lake, but has the same coordinates (42.68830076, -83.4316292) and depth (117 ft)
+      as 63-856 Maceday Lake, and sits inside DNR's Maceday basin, 674 m from Lotus. Looks like a copied
+      record, so Lotus Lake's depth is not recorded.

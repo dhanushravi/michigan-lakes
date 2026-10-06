@@ -1,0 +1,17 @@
+# Pilot test lakes for Oakland County. tests/test_match.py checks each against the match output.
+# Keyed on our lake_id; `name` and `id3dhp` are there for readability and as a drift check.
+# expect_spots: number of DNR access points matched to the lake (0 must render as "none mapped").
+
+region: oakland
+lakes:
+  - {lake_id: L-000337, name: Cass Lake,            id3dhp: M3HWS, tier: popular, expect_spots: 1, why: "Largest; Dodge #4 State Park; 28 islands"}
+  - {lake_id: L-000144, name: Orchard Lake,         id3dhp: JMAYP, tier: popular, expect_spots: 1, why: "4 islands"}
+  - {lake_id: L-000098, name: Pontiac Lake,         id3dhp: J496K, tier: popular, expect_spots: 2, why: "Two sites; 21 islands"}
+  - {lake_id: L-000369, name: Union Lake,           id3dhp: MBLET, tier: popular, expect_spots: 2, why: "Two sites, no islands"}
+  - {lake_id: L-000205, name: Proud Lake,           id3dhp: KDZDC, tier: medium,  expect_spots: 2, why: "State recreation area; IFR calls it Lower Proud Lake"}
+  - {lake_id: L-000163, name: Lower Pettibone Lake, id3dhp: JSV4P, tier: medium,  expect_spots: 1, why: "Typical mid-size lake"}
+  - {lake_id: L-000016, name: Maceday Lake,         id3dhp: IRZAG, tier: medium,  expect_spots: 1, why: "3DHP merges Maceday and Lotus; split by override"}
+  - {lake_id: L-000290, name: Wildwood Lake,        id3dhp: L9YCR, tier: obscure, expect_spots: 1, why: "DNR/IFR call it Heron Lake; name conflict override"}
+  - {lake_id: L-000372, name: Alderman Lake,        id3dhp: MC5S4, tier: obscure, expect_spots: 1, why: "Small lake"}
+  - {lake_id: L-000031, name: Chamberlain Lake,     id3dhp: IS042, tier: obscure, expect_spots: 1, why: "No 3DHP name; name from DNR access"}
+  - {lake_id: L-000375, name: Walled Lake,          id3dhp: MCI3K, tier: popular, expect_spots: 0, why: "653 acres, no DNR access site; must render as none mapped"}
