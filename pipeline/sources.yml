@@ -1,0 +1,111 @@
+# Source registry. One entry per upstream layer.
+# Layer URLs found via the State of Michigan Open Data Portal (gis-michigan.opendata.arcgis.com)
+# and USGS The National Map. Checked 2026-10-06.
+#
+# status:
+#   confirmed            - terms checked; may appear in the public dataset export
+#   pending-confirmation - fine for local development; the public export must skip it
+#
+# fetch: true means pipeline/steps/fetch.py downloads it for the active region.
+
+regions:
+  oakland:
+    name: Oakland County, Michigan
+    # Boundary comes from the `mi_counties` source below, filtered with this where clause.
+    boundary_source: mi_counties
+    boundary_where: "Name = 'Oakland'"
+    fips: "26125"
+    mi_county_code: 63   # Michigan's alphabetical county number, used by the DNR access layer's `county` field
+
+active_region: oakland
+
+sources:
+  dnr_boating_access:
+    name: PRD Boating Access Sites (Michigan Boating Facilities, MiBFF)
+    publisher: Michigan DNR Parks and Recreation Division
+    use: Access points and launches
+    release: v1
+    url: https://services3.arcgis.com/Jdnp1TjADvSDxMAX/arcgis/rest/services/PRDBASPublicView/FeatureServer/0
+    portal_item: https://gis-michigan.opendata.arcgis.com/datasets/3eaf9804bf6f4bafb8e03aea660c9fce
+    service_type: arcgis_feature
+    max_record_count: 2000          # from layer metadata; fetch.py re-reads it at runtime
+    refresh: monthly
+    license: >-
+      State of Michigan public record. Item text: "there are no restrictions on the use, reproduction,
+      or distribution of this dataset", provided AS IS. Not yet reviewed by the project owner.
+    status: pending-confirmation
+    fetch: true
+    notes: >-
+      Includes DNR-administered sites and local sites funded by the DNR Waterways Grant Program, so it
+      is not every public access in the county. Includes river and Great Lakes sites; filter by
+      waterbodytype. Has its own latitude/longitude fields besides the geometry.
+
+  usgs_3dhp_waterbody:
+    name: USGS 3DHP Waterbody
+    publisher: U.S. Geological Survey, The National Map (3D Hydrography Program)
+    use: Lake polygons (replaces retired NHD)
+    release: v1
+    url: https://hydro.nationalmap.gov/arcgis/rest/services/3DHP_all/MapServer/60
+    portal_item: https://www.usgs.gov/3d-hydrography-program
+    service_type: arcgis_map
+    max_record_count: 2500
+    refresh: quarterly
+    license: Public domain (U.S. Government work). Credit "USGS The National Map, 3D Hydrography Program".
+    status: confirmed
+    fetch: true
+    notes: >-
+      Nationwide layer (7.1M features), so always query with a spatial filter. The service does not
+      support grouped statistics queries. Where elevation-derived hydrography has not been collected,
+      USGS fills in from NHD.
+
+  dnr_hydro_poly:
+    name: DNR Reference Hydro Poly
+    publisher: Michigan DNR
+    use: Alternate lake polygons with Acres (candidate for IFR area); cross-check against 3DHP
+    release: v1
+    url: https://services3.arcgis.com/Jdnp1TjADvSDxMAX/arcgis/rest/services/DNRHydrologyOPENDATA/FeatureServer/3
+    service_type: arcgis_feature
+    max_record_count: 2000
+    refresh: quarterly
+    license: State of Michigan public record, no restrictions on use, provided AS IS.
+    status: confirmed
+    fetch: true
+    notes: Digitized from 1978 USGS 1:24k quads and partly repositioned to recent imagery.
+
+  ifr_lake_deep_points:
+    name: IFR MI Lake Deep Points
+    publisher: Michigan DNR Institute for Fisheries Research
+    use: Maximum depth (feet) for about 2,176 lakes. Depth is optional.
+    release: v1
+    url: https://services3.arcgis.com/Jdnp1TjADvSDxMAX/arcgis/rest/services/DNRHydrologyOPENDATA/FeatureServer/0
+    service_type: arcgis_feature
+    max_record_count: 2000
+    refresh: yearly
+    license: State of Michigan public record, no restrictions on use, provided AS IS.
+    status: confirmed
+    fetch: true
+    notes: Point layer, not polygons. Join to lakes by point-in-polygon.
+
+  mi_counties:
+    name: Michigan County boundaries
+    publisher: State of Michigan (DTMB Center for Shared Solutions)
+    use: Region boundary for clipping
+    release: v1
+    url: https://services3.arcgis.com/dxRQUfTDNtfqZ301/arcgis/rest/services/County/FeatureServer/0
+    portal_item: https://gis-michigan.opendata.arcgis.com/datasets/8fc9c089c11a4913b0768381fa07bf6d
+    service_type: arcgis_feature
+    max_record_count: 2000
+    refresh: yearly
+    license: State of Michigan public record, no restrictions on use, provided AS IS.
+    status: confirmed
+    fetch: boundary
+
+  # Recorded so later releases have a slot. Not fetched in v1.
+  dnr_trails:
+    name: DNR trails (DNRTrailsOPENDATA)
+    use: Trails
+    release: v2
+    url: https://gisagodnr.state.mi.us/arcgis/rest/services/DNR/DNRTrailsOPENDATA/FeatureServer
+    status: pending-confirmation
+    fetch: false
+    notes: Has motorized layers (ORV, ATV, snowmobile, motorcycle); filter them out.

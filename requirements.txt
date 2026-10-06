@@ -1,0 +1,7 @@
+geopandas>=1.2
+shapely>=2.1
+pyogrio>=0.13
+pyproj>=3.8
+duckdb>=1.5
+requests>=2.34
+pyyaml>=6.0
